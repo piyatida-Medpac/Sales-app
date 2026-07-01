@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MEDPAC Sales">
+<title>MEDPAC Sales</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --navy:#1f3b63; --blue:#2e75b6; --blue2:#4a90d9; --bg:#eef3f9; --card:#ffffff;
+  --ink:#1c2732; --muted:#7a8899; --line:#e3eaf2; --green:#2e9e5b; --amber:#e0a422; --red:#d9534f;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--bg);color:var(--ink);padding-bottom:76px}
+header{background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;padding:16px 16px 20px;
+  border-radius:0 0 20px 20px;box-shadow:0 4px 14px rgba(31,59,99,.25)}
+.brand{display:flex;align-items:center;justify-content:space-between}
+.brand h1{font-size:18px;margin:0;font-weight:700}
+.namebtn{background:rgba(255,255,255,.18);border:0;color:#fff;padding:7px 12px;border-radius:20px;font-size:13px;font-weight:600}
+.greet{margin-top:14px;font-size:22px;font-weight:700}
+.greet small{display:block;font-size:13px;font-weight:400;opacity:.85;margin-top:2px}
+main{padding:14px}
+.view{display:none} .view.active{display:block}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:14px;box-shadow:0 2px 8px rgba(31,59,99,.06)}
+.sec-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:4px 2px 10px}
+.qa{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qbtn{border:0;background:var(--card);border-radius:16px;padding:16px 12px;text-align:left;
+  box-shadow:0 2px 8px rgba(31,59,99,.07)}
+.qbtn .ic{font-size:24px} .qbtn .t{font-weight:700;margin-top:8px} .qbtn .s{font-size:12px;color:var(--muted);margin-top:2px}
+.qbtn.in{background:linear-gradient(135deg,#2e9e5b,#37b56a);color:#fff} .qbtn.in .s{color:rgba(255,255,255,.9)}
+.qbtn.out{background:linear-gradient(135deg,#d9534f,#e2685f);color:#fff} .qbtn.out .s{color:rgba(255,255,255,.9)}
+.row{display:flex;align-items:center;justify-content:space-between}
+.timer{font-variant-numeric:tabular-nums;font-size:30px;font-weight:800;color:var(--navy);text-align:center;padding:6px 0}
+.loc{font-size:12px;color:var(--muted);text-align:center}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:13px;font-size:15px;font-weight:700;color:#fff;margin-top:10px}
+.btn.green{background:var(--green)} .btn.red{background:var(--red)} .btn.blue{background:var(--blue)}
+.btn.ghost{background:#eef3f9;color:var(--navy)}
+.btn:disabled{opacity:.45}
+.link{color:var(--blue);font-size:13px;font-weight:700;background:none;border:0}
+.mini{display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:center}
+.mini .n{font-size:30px;font-weight:800;color:var(--navy)} .mini .l{font-size:12px;color:var(--muted)}
+.item{border-top:1px solid var(--line);padding:10px 2px;font-size:14px}
+.item:first-child{border-top:0}
+.badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+.badge.in{background:#e3f6ea;color:var(--green)} .badge.done{background:#eef3f9;color:var(--muted)}
+.empty{color:var(--muted);font-size:13px;text-align:center;padding:16px}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit;margin-top:4px;background:#fbfcfe}
+label{font-size:12px;font-weight:700;color:var(--muted)}
+.field{margin-bottom:10px}
+img.photo{width:100%;border-radius:12px;margin-top:8px;display:block}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid var(--line);
+  box-shadow:0 -2px 10px rgba(31,59,99,.06)}
+nav button{flex:1;border:0;background:none;padding:9px 0 10px;font-size:11px;color:var(--muted);font-weight:600}
+nav button .ic{display:block;font-size:20px;margin-bottom:2px}
+nav button.active{color:var(--blue)}
+.modal{position:fixed;inset:0;background:rgba(18,28,44,.75);display:none;flex-direction:column;z-index:50}
+.modal.open{display:flex}
+.modal .bar{display:flex;justify-content:space-between;align-items:center;color:#fff;padding:14px}
+.modal video{flex:1;object-fit:cover;width:100%}
+.modal .actions{padding:16px;display:flex;gap:10px}
+.modal .actions .btn{margin:0}
+.pill{display:inline-block;background:#eef3f9;color:var(--navy);font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px}
+.hint{font-size:11px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>💼 MEDPAC Sales</h1>
+    <button class="namebtn" id="nameBtn">👤 <span id="nameLbl">Set name</span></button>
+  </div>
+  <div class="greet" id="greet">Welcome! 👋<small id="sub">Enter your name to get started</small></div>
+</header>
+
+<main>
+  <!-- HOME -->
+  <section class="view active" id="v-home">
+    <div class="sec-title">Quick Actions</div>
+    <div class="qa">
+      <button class="qbtn in" id="qCheckIn"><div class="ic">📍</div><div class="t">Check In</div><div class="s" id="ciState">Not checked in</div></button>
+      <button class="qbtn out" id="qCheckOut"><div class="ic">🏁</div><div class="t">Check Out</div><div class="s" id="coState">—</div></button>
+      <button class="qbtn" onclick="go('reports');openReport()"><div class="ic">📝</div><div class="t">Visit Report</div><div class="s">Create &amp; save PDF</div></button>
+      <button class="qbtn" onclick="alert('Weekly Plan — coming soon')"><div class="ic">🗓️</div><div class="t">Weekly Plan</div><div class="s">Coming soon</div></button>
+    </div>
+
+    <div class="card">
+      <div class="row"><div class="sec-title" style="margin:0">Today's Activity</div><button class="link" onclick="go('dash')">See all →</button></div>
+      <div id="todayList"><div class="empty">No check-ins yet today</div></div>
+    </div>
+
+    <div class="card">
+      <div class="timer" id="timer">00:00:00</div>
+      <div class="loc" id="loc">—</div>
+    </div>
+  </section>
+
+  <!-- CHECK IN/OUT -->
+  <section class="view" id="v-check">
+    <div class="card">
+      <div class="sec-title">Check In / Out</div>
+      <div class="timer" id="timer2">00:00:00</div>
+      <div class="loc" id="loc2">Locating…</div>
+      <button class="btn green" id="btnIn">Check In — Take Photo</button>
+      <button class="btn red" id="btnOut" disabled>Check Out — Take Photo</button>
+      <div class="hint">A photo and your GPS location are recorded at check-in and check-out.</div>
+    </div>
+    <div class="card" id="lastPhotoCard" style="display:none">
+      <div class="sec-title">Last Check-in Photo</div>
+      <img class="photo" id="lastPhoto" alt="Check-in photo">
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section class="view" id="v-dash">
+    <div class="card">
+      <div class="sec-title">📊 Team Dashboard</div>
+      <div class="mini">
+        <div><div class="n" id="mActive">0</div><div class="l">Active (In)</div></div>
+        <div><div class="n" id="mDone">0</div><div class="l">Done Today</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-title">Salesperson Status</div>
+      <div id="statusList"><div class="empty">No records yet</div></div>
+    </div>
+    <div class="card">
+      <div class="sec-title">Timeline</div>
+      <div id="timeline"><div class="empty">No activity yet</div></div>
+    </div>
+    <div class="card">
+      <div class="row"><div class="sec-title" style="margin:0">My Records — Last 7 Days</div><button class="link" onclick="exportCSV(7)">⬇ Export CSV</button></div>
+      <div id="myRecords"><div class="empty">No records yet</div></div>
+    </div>
+  </section>
+
+  <!-- REPORTS -->
+  <section class="view" id="v-reports">
+    <div class="card">
+      <div class="sec-title">📝 Sales Visit Report</div>
+      <div class="field"><label>Report date</label><input type="date" id="rDate"></div>
+      <div class="field"><label>Customer / company</label><input id="rCustomer" placeholder="Customer name"></div>
+      <div class="field"><label>Contact person &amp; role</label><input id="rContact" placeholder="e.g. Dr. Somchai, Purchasing"></div>
+      <div class="field"><label>Visit type</label>
+        <select id="rType"><option>New lead</option><option>Follow-up</option><option>Demo / presentation</option><option>Quotation</option><option>Closing</option><option>After-sales</option></select></div>
+      <div class="field"><label>Product / machine discussed</label><input id="rProduct" placeholder="Model / product line"></div>
+      <div class="field"><label>Customer need / discussion</label><textarea id="rNeed" rows="3" placeholder="What the customer is looking for"></textarea></div>
+      <div class="field"><label>Outcome</label>
+        <select id="rOutcome"><option>Interested</option><option>Quotation requested</option><option>Negotiating</option><option>Won</option><option>Lost</option><option>No decision</option></select></div>
+      <div class="field"><label>Est. opportunity value (THB)</label><input id="rValue" type="number" placeholder="0"></div>
+      <div class="field"><label>Next step &amp; follow-up date</label><input id="rNext" placeholder="e.g. Send quote by 10 Jul"></div>
+      <button class="btn blue" onclick="makePDF()">📄 Create &amp; save PDF</button>
+      <div class="hint">Report opens a PDF you can save or share.</div>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">📥 Monthly Report</div>
+      <div class="hint" style="margin-top:0">Export check-in/out data to CSV.</div>
+      <div class="field"><label>Select month</label><input type="month" id="mMonth"></div>
+      <button class="btn ghost" onclick="viewHistory()">View History</button>
+      <button class="btn blue" onclick="exportMonth()">⬇ Export CSV</button>
+      <div id="history" style="margin-top:10px"></div>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button class="active" data-v="home" onclick="go('home')"><span class="ic">🏠</span>Home</button>
+  <button data-v="check" onclick="go('check')"><span class="ic">📍</span>Check In/Out</button>
+  <button data-v="dash" onclick="go('dash')"><span class="ic">📊</span>Dashboard</button>
+  <button data-v="reports" onclick="go('reports')"><span class="ic">📝</span>Reports</button>
+</nav>
+
+<!-- CAMERA MODAL -->
+<div class="modal" id="cam">
+  <div class="bar"><strong id="camTitle">Check In Photo</strong><button class="link" style="color:#fff" onclick="closeCam()">✕ Cancel</button></div>
+  <video id="video" autoplay playsinline></video>
+  <div class="actions">
+    <button class="btn ghost" style="flex:0 0 auto;padding:13px 16px" onclick="flipCam()">🔄 Flip</button>
+    <button class="btn blue" onclick="snap()">📸 Capture</button>
+  </div>
+</div>
+<canvas id="canvas" style="display:none"></canvas>
+
+<script>
+const DB_KEY="medpac_sales_records";
+const NAME_KEY="medpac_sales_name";
+let facing="environment", stream=null, camMode="in", pendingLoc="—";
+
+function load(){return JSON.parse(localStorage.getItem(DB_KEY)||"[]")}
+function save(r){localStorage.setItem(DB_KEY,JSON.stringify(r))}
+function today(){return new Date().toISOString().slice(0,10)}
+function fmt(t){const d=new Date(t);return d.toLocaleString()}
+function hms(ms){const s=Math.floor(ms/1000);const h=String(Math.floor(s/3600)).padStart(2,'0');
+  const m=String(Math.floor(s%3600/60)).padStart(2,'0');const x=String(s%60).padStart(2,'0');return h+":"+m+":"+x}
+
+/* ---- name / greeting ---- */
+function getName(){return localStorage.getItem(NAME_KEY)||""}
+function refreshName(){
+  const n=getName();
+  document.getElementById('nameLbl').textContent=n||"Set name";
+  const hr=new Date().getHours();
+  const part=hr<12?"Good morning":hr<18?"Good afternoon":"Good evening";
+  document.getElementById('greet').innerHTML=(n?part+", "+n+"! 👋":"Welcome! 👋")+
+    "<small id='sub'>"+(n?today():"Enter your name to get started")+"</small>";
+}
+document.getElementById('nameBtn').onclick=()=>{
+  const n=prompt("Enter your name:",getName());
+  if(n!==null){localStorage.setItem(NAME_KEY,n.trim());refreshName();render();}
+};
+
+/* ---- nav ---- */
+function go(v){
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
+  document.getElementById('v-'+v).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
+  window.scrollTo(0,0); render();
+}
+document.getElementById('qCheckIn').onclick=()=>{go('check');openCam('in')};
+document.getElementById('qCheckOut').onclick=()=>{go('check');if(!openCheck())openCam('out')};
+document.getElementById('btnIn').onclick=()=>openCam('in');
+document.getElementById('btnOut').onclick=()=>openCam('out');
+
+/* ---- open state helpers ---- */
+function openRecord(){return load().find(r=>r.name===getName()&&!r.out)}
+function openCheck(){return !openRecord()} // true if nothing to check out
+
+/* ---- geolocation ---- */
+function locate(){
+  if(!navigator.geolocation){pendingLoc="GPS not available";return}
+  navigator.geolocation.getCurrentPosition(p=>{
+    pendingLoc=p.coords.latitude.toFixed(5)+", "+p.coords.longitude.toFixed(5);
+    setLoc();
+  },()=>{pendingLoc="Location blocked";setLoc();},{enableHighAccuracy:true,timeout:8000});
+}
+function setLoc(){document.getElementById('loc').textContent=pendingLoc;document.getElementById('loc2').textContent=pendingLoc}
+
+/* ---- camera ---- */
+async function openCam(mode){
+  if(!getName()){alert("Please set your name first.");return}
+  if(mode==='out'&&!openRecord()){alert("You are not checked in.");return}
+  if(mode==='in'&&openRecord()){alert("You are already checked in. Please check out first.");return}
+  camMode=mode;
+  document.getElementById('camTitle').textContent=mode==='in'?"Check In Photo":"Check Out Photo";
+  document.getElementById('cam').classList.add('open');
+  await startStream();
+}
+async function startStream(){
+  try{
+    if(stream)stream.getTracks().forEach(t=>t.stop());
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing}});
+    document.getElementById('video').srcObject=stream;
+  }catch(e){alert("Camera not available: "+e.message);closeCam();}
+}
+function flipCam(){facing=facing==='environment'?'user':'environment';startStream();}
+function closeCam(){document.getElementById('cam').classList.remove('open');if(stream)stream.getTracks().forEach(t=>t.stop());}
+function snap(){
+  const v=document.getElementById('video'),c=document.getElementById('canvas');
+  c.width=v.videoWidth||640;c.height=v.videoHeight||480;
+  c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+  const img=c.toDataURL('image/jpeg',0.6);
+  camMode==='in'?doCheckIn(img):doCheckOut(img);
+  closeCam();
+}
+
+/* ---- check in / out ---- */
+function doCheckIn(img){
+  const recs=load();
+  recs.push({id:Date.now(),name:getName(),date:today(),in:Date.now(),out:null,locIn:pendingLoc,locOut:"",photoIn:img,photoOut:""});
+  save(recs);render();
+}
+function doCheckOut(img){
+  const recs=load();const r=recs.slice().reverse().find(x=>x.name===getName()&&!x.out);
+  if(r){r.out=Date.now();r.locOut=pendingLoc;r.photoOut=img;save(recs);}
+  render();
+}
+
+/* ---- timer ---- */
+setInterval(()=>{
+  const r=openRecord();
+  const t=r?hms(Date.now()-r.in):"00:00:00";
+  document.getElementById('timer').textContent=t;
+  document.getElementById('timer2').textContent=t;
+},1000);
+
+/* ---- render ---- */
+function render(){
+  const recs=load(),me=getName();
+  // quick action states
+  const open=openRecord();
+  document.getElementById('ciState').textContent=open?"Checked in ✓":"Not checked in";
+  document.getElementById('coState').textContent=open?"Tap to check out":"—";
+  document.getElementById('btnOut').disabled=!open;
+  document.getElementById('btnIn').disabled=!!open;
+  // last photo
+  const mine=recs.filter(r=>r.name===me).sort((a,b)=>b.in-a.in);
+  if(mine[0]&&mine[0].photoIn){document.getElementById('lastPhotoCard').style.display='';document.getElementById('lastPhoto').src=mine[0].photoIn;}
+  // today list
+  const t=today();
+  const todayR=recs.filter(r=>r.date===t);
+  document.getElementById('todayList').innerHTML = todayR.length? todayR.slice().reverse().map(rowItem).join("") : "<div class='empty'>No check-ins yet today</div>";
+  // dashboard
+  document.getElementById('mActive').textContent=recs.filter(r=>r.date===t&&!r.out).length;
+  document.getElementById('mDone').textContent=recs.filter(r=>r.date===t&&r.out).length;
+  const people=[...new Set(recs.filter(r=>r.date===t).map(r=>r.name))];
+  document.getElementById('statusList').innerHTML = people.length? people.map(n=>{
+    const act=recs.some(r=>r.date===t&&r.name===n&&!r.out);
+    return "<div class='item row'><span>"+esc(n)+"</span><span class='badge "+(act?'in':'done')+"'>"+(act?'In':'Done')+"</span></div>";
+  }).join("") : "<div class='empty'>No records yet</div>";
+  const tl=recs.filter(r=>r.date===t).sort((a,b)=>b.in-a.in);
+  document.getElementById('timeline').innerHTML = tl.length? tl.map(r=>
+    "<div class='item'>"+esc(r.name)+" · in "+new Date(r.in).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+
+    (r.out?" · out "+new Date(r.out).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):" · <span class='pill'>active</span>")+"</div>"
+  ).join("") : "<div class='empty'>No activity yet</div>";
+  // my records 7 days
+  const wk=Date.now()-7*864e5;
+  const m7=mine.filter(r=>r.in>=wk);
+  document.getElementById('myRecords').innerHTML = m7.length? m7.map(rowItem).join("") : "<div class='empty'>No records yet</div>";
+}
+function rowItem(r){
+  const dur=r.out?hms(r.out-r.in):"active";
+  return "<div class='item row'><span>"+esc(r.name)+" · "+r.date+"</span><span class='pill'>"+dur+"</span></div>";
+}
+function esc(s){return (s||"").replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+
+/* ---- CSV ---- */
+function toCSV(rows){
+  const head=["Name","Date","Check In","Check Out","Duration","Location In","Location Out"];
+  const body=rows.map(r=>[r.name,r.date,fmt(r.in),r.out?fmt(r.out):"",r.out?hms(r.out-r.in):"",r.locIn,r.locOut]
+    .map(v=>'"'+String(v||"").replace(/"/g,'""')+'"').join(","));
+  return [head.join(","),...body].join("\n");
+}
+function download(name,text){
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(text);a.download=name;a.click();
+}
+function exportCSV(days){
+  const cut=Date.now()-days*864e5;
+  const rows=load().filter(r=>r.name===getName()&&r.in>=cut);
+  if(!rows.length){alert("No records to export.");return}
+  download("medpac_sales_last"+days+"days.csv",toCSV(rows));
+}
+function exportMonth(){
+  const m=document.getElementById('mMonth').value; if(!m){alert("Select a month first.");return}
+  const rows=load().filter(r=>r.date.startsWith(m));
+  if(!rows.length){alert("No records for "+m);return}
+  download("medpac_sales_"+m+".csv",toCSV(rows));
+}
+function viewHistory(){
+  const m=document.getElementById('mMonth').value; if(!m){alert("Select a month first.");return}
+  const rows=load().filter(r=>r.date.startsWith(m)).sort((a,b)=>b.in-a.in);
+  document.getElementById('history').innerHTML = rows.length?
+    "<div class='sec-title'>Daily History — "+m+"</div>"+rows.map(rowItem).join("") : "<div class='empty'>No records for "+m+"</div>";
+}
+
+/* ---- PDF report ---- */
+function openReport(){document.getElementById('rDate').value=today();}
+function makePDF(){
+  const {jsPDF}=window.jspdf; const d=new jsPDF();
+  const g=id=>document.getElementById(id).value||"—";
+  d.setFillColor(31,59,99);d.rect(0,0,210,26,'F');
+  d.setTextColor(255);d.setFontSize(16);d.text("MEDPAC — Sales Visit Report",14,16);
+  d.setTextColor(30);d.setFontSize(11);
+  const rows=[["Report date",g('rDate')],["Salesperson",getName()||"—"],["Customer / company",g('rCustomer')],
+    ["Contact person & role",g('rContact')],["Visit type",g('rType')],["Product / machine",g('rProduct')],
+    ["Customer need / discussion",g('rNeed')],["Outcome",g('rOutcome')],["Opportunity value (THB)",g('rValue')],
+    ["Next step & follow-up",g('rNext')]];
+  let y=38;
+  rows.forEach(([k,v])=>{
+    d.setFont(undefined,'bold');d.text(k+":",14,y);
+    d.setFont(undefined,'normal');
+    const lines=d.splitTextToSize(String(v),120);d.text(lines,70,y);
+    y+=Math.max(8,lines.length*6)+2;
+  });
+  y+=14;d.setDrawColor(180);d.line(14,y,90,y);d.text("Salesperson signature",14,y+6);
+  d.line(120,y,196,y);d.text("Customer signature",120,y+6);
+  const cust=(document.getElementById('rCustomer').value||"report").replace(/[^a-z0-9]/gi,'_');
+  d.save("MEDPAC_visit_"+cust+"_"+today()+".pdf");
+}
+
+/* ---- init ---- */
+document.getElementById('mMonth').value=today().slice(0,7);
+openReport();
+refreshName();locate();render();
+</script>
+</body>
+</html>
