@@ -68,6 +68,7 @@ nav button.active{color:var(--blue)}
 .modal .actions .btn{margin:0}
 .pill{display:inline-block;background:#eef3f9;color:var(--navy);font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px}
 .hint{font-size:11px;color:var(--muted);margin-top:6px}
+.grp{font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin:16px 2px 8px;border-bottom:1px solid var(--line);padding-bottom:4px}
 </style>
 </head>
 <body>
@@ -139,25 +140,62 @@ nav button.active{color:var(--blue)}
       <div class="row"><div class="sec-title" style="margin:0">My Records — Last 7 Days</div><button class="link" onclick="exportCSV(7)">⬇ Export CSV</button></div>
       <div id="myRecords"><div class="empty">No records yet</div></div>
     </div>
+    <div class="card">
+      <div class="row"><div class="sec-title" style="margin:0">📝 Visit Reports</div><span class="pill" id="repCount">0 this month</span></div>
+      <div id="repRecent"><div class="empty">No reports yet</div></div>
+    </div>
   </section>
 
   <!-- REPORTS -->
   <section class="view" id="v-reports">
     <div class="card">
       <div class="sec-title">📝 Sales Visit Report</div>
-      <div class="field"><label>Report date</label><input type="date" id="rDate"></div>
-      <div class="field"><label>Customer / company</label><input id="rCustomer" placeholder="Customer name"></div>
-      <div class="field"><label>Contact person &amp; role</label><input id="rContact" placeholder="e.g. Dr. Somchai, Purchasing"></div>
+
+      <div class="grp">Visit info</div>
+      <div class="field"><label>Visit date</label><input type="date" id="rDate"></div>
       <div class="field"><label>Visit type</label>
-        <select id="rType"><option>New lead</option><option>Follow-up</option><option>Demo / presentation</option><option>Quotation</option><option>Closing</option><option>After-sales</option></select></div>
-      <div class="field"><label>Product / machine discussed</label><input id="rProduct" placeholder="Model / product line"></div>
-      <div class="field"><label>Customer need / discussion</label><textarea id="rNeed" rows="3" placeholder="What the customer is looking for"></textarea></div>
+        <select id="rType" onchange="ursToggle()"><option>New URS</option><option>Existing Project</option><option>Introduction visit</option><option>Follow-up</option><option>Demo / presentation</option><option>After-sales</option></select></div>
+      <div class="field"><label>Visit channel</label>
+        <select id="rChannel"><option>On-site</option><option>Online</option><option>Phone</option></select></div>
+
+      <div class="grp">Customer</div>
+      <div class="field"><label>Company name</label><input id="rCompany" placeholder="Company / hospital name"></div>
+      <div class="field"><label>Contact person</label><input id="rContact" placeholder="Name"></div>
+      <div class="field"><label>Position / role</label><input id="rPosition" placeholder="e.g. Purchasing, QA, Dr."></div>
+      <div class="field"><label>Department</label><input id="rDept" placeholder="Department"></div>
+      <div class="field"><label>Phone</label><input id="rPhone" placeholder="Phone"></div>
+      <div class="field"><label>Email</label><input id="rEmail" type="email" placeholder="Email"></div>
+      <div class="field"><label>Site / location</label><input id="rSite" placeholder="Branch or address"></div>
+
+      <div class="grp">Opportunity / project</div>
+      <div class="field"><label>Product / machine of interest</label><input id="rProduct" placeholder="Model / product line"></div>
+      <div class="field"><label>Project name / reference</label><input id="rProject" placeholder="For existing project"></div>
+      <div class="field"><label>Estimated value (THB)</label><input id="rValue" type="number" placeholder="0"></div>
+      <div class="field"><label>Budget status</label>
+        <select id="rBudget"><option>Unknown</option><option>Budgeted</option><option>Not yet budgeted</option><option>Pending approval</option></select></div>
+      <div class="field"><label>Expected purchase timeframe</label>
+        <select id="rTime"><option>Unknown</option><option>This quarter</option><option>3–6 months</option><option>6–12 months</option><option>Over 12 months</option></select></div>
+      <div class="field"><label>Competitors involved</label><input id="rComp" placeholder="If any"></div>
+
+      <div class="grp">Meeting detail</div>
+      <div class="field"><label>Purpose of visit</label><input id="rPurpose" placeholder="Purpose"></div>
+      <div class="field"><label>Discussion notes</label><textarea id="rNotes" rows="6" placeholder="Meeting details — short or long"></textarea></div>
+      <div class="field" id="ursField" style="display:none"><label>Customer requirements / URS notes</label><textarea id="rURS" rows="4" placeholder="Key requirements / specifications"></textarea></div>
+
+      <div class="grp">Outcome &amp; next steps</div>
       <div class="field"><label>Outcome</label>
         <select id="rOutcome"><option>Interested</option><option>Quotation requested</option><option>Negotiating</option><option>Won</option><option>Lost</option><option>No decision</option></select></div>
-      <div class="field"><label>Est. opportunity value (THB)</label><input id="rValue" type="number" placeholder="0"></div>
-      <div class="field"><label>Next step &amp; follow-up date</label><input id="rNext" placeholder="e.g. Send quote by 10 Jul"></div>
-      <button class="btn blue" onclick="makePDF()">📄 Create &amp; save PDF</button>
-      <div class="hint">Report opens a PDF you can save or share.</div>
+      <div class="field"><label>Next to-do</label><textarea id="rNext" rows="2" placeholder="Action items"></textarea></div>
+      <div class="field"><label>Responsible person</label><input id="rOwner" placeholder="Who follows up"></div>
+      <div class="field"><label>Follow-up date</label><input type="date" id="rFollow"></div>
+
+      <button class="btn blue" onclick="makePDF()">📄 Create &amp; save report (PDF)</button>
+      <div class="hint">Saves a PDF and stores the report in the app.</div>
+    </div>
+
+    <div class="card">
+      <div class="row"><div class="sec-title" style="margin:0">📁 Saved Visit Reports</div><button class="link" onclick="exportReportsCSV()">⬇ Export CSV</button></div>
+      <div id="reportsList"><div class="empty">No reports yet</div></div>
     </div>
 
     <div class="card">
@@ -196,6 +234,9 @@ let facing="environment", stream=null, camMode="in", pendingLoc="—";
 
 function load(){return JSON.parse(localStorage.getItem(DB_KEY)||"[]")}
 function save(r){localStorage.setItem(DB_KEY,JSON.stringify(r))}
+const REP_KEY="medpac_sales_reports";
+function loadReports(){return JSON.parse(localStorage.getItem(REP_KEY)||"[]")}
+function saveReports(r){localStorage.setItem(REP_KEY,JSON.stringify(r))}
 function today(){return new Date().toISOString().slice(0,10)}
 function fmt(t){const d=new Date(t);return d.toLocaleString()}
 function hms(ms){const s=Math.floor(ms/1000);const h=String(Math.floor(s/3600)).padStart(2,'0');
@@ -323,6 +364,7 @@ function render(){
   const wk=Date.now()-7*864e5;
   const m7=mine.filter(r=>r.in>=wk);
   document.getElementById('myRecords').innerHTML = m7.length? m7.map(rowItem).join("") : "<div class='empty'>No records yet</div>";
+  renderReports();
 }
 function rowItem(r){
   const dur=r.out?hms(r.out-r.in):"active";
@@ -359,35 +401,58 @@ function viewHistory(){
     "<div class='sec-title'>Daily History — "+m+"</div>"+rows.map(rowItem).join("") : "<div class='empty'>No records for "+m+"</div>";
 }
 
-/* ---- PDF report ---- */
-function openReport(){document.getElementById('rDate').value=today();}
+/* ---- Visit report ---- */
+function ursToggle(){const t=document.getElementById('rType');const f=document.getElementById('ursField');if(t&&f)f.style.display=(t.value==='New URS')?'':'none';}
+function openReport(){const e=document.getElementById('rDate');if(e)e.value=today();ursToggle();}
 function makePDF(){
-  const {jsPDF}=window.jspdf; const d=new jsPDF();
-  const g=id=>document.getElementById(id).value||"—";
-  d.setFillColor(31,59,99);d.rect(0,0,210,26,'F');
-  d.setTextColor(255);d.setFontSize(16);d.text("MEDPAC — Sales Visit Report",14,16);
-  d.setTextColor(30);d.setFontSize(11);
-  const rows=[["Report date",g('rDate')],["Salesperson",getName()||"—"],["Customer / company",g('rCustomer')],
-    ["Contact person & role",g('rContact')],["Visit type",g('rType')],["Product / machine",g('rProduct')],
-    ["Customer need / discussion",g('rNeed')],["Outcome",g('rOutcome')],["Opportunity value (THB)",g('rValue')],
-    ["Next step & follow-up",g('rNext')]];
-  let y=38;
-  rows.forEach(([k,v])=>{
-    d.setFont(undefined,'bold');d.text(k+":",14,y);
-    d.setFont(undefined,'normal');
-    const lines=d.splitTextToSize(String(v),120);d.text(lines,70,y);
-    y+=Math.max(8,lines.length*6)+2;
-  });
-  y+=14;d.setDrawColor(180);d.line(14,y,90,y);d.text("Salesperson signature",14,y+6);
-  d.line(120,y,196,y);d.text("Customer signature",120,y+6);
-  const cust=(document.getElementById('rCustomer').value||"report").replace(/[^a-z0-9]/gi,'_');
-  d.save("MEDPAC_visit_"+cust+"_"+today()+".pdf");
+  const g=id=>{const e=document.getElementById(id);return e?String(e.value).trim():"";};
+  const o={id:Date.now(),date:g('rDate')||today(),salesperson:getName()||"\u2014",type:g('rType'),channel:g('rChannel'),
+    company:g('rCompany'),contact:g('rContact'),position:g('rPosition'),dept:g('rDept'),phone:g('rPhone'),email:g('rEmail'),site:g('rSite'),
+    product:g('rProduct'),project:g('rProject'),value:g('rValue'),budget:g('rBudget'),timeframe:g('rTime'),competitors:g('rComp'),
+    purpose:g('rPurpose'),notes:g('rNotes'),urs:g('rURS'),outcome:g('rOutcome'),next:g('rNext'),owner:g('rOwner'),follow:g('rFollow')};
+  if(!o.company){alert("Please enter the company name.");return;}
+  const reps=loadReports();reps.push(o);saveReports(reps);renderReports();
+  makePDFfromObj(o);
+}
+function makePDFfromObj(o){
+  const {jsPDF}=window.jspdf; const d=new jsPDF(); let y=0;
+  d.setFillColor(31,59,99);d.rect(0,0,210,24,'F');d.setTextColor(255);d.setFontSize(15);d.text("MEDPAC \u2014 Sales Visit Report",14,15);d.setTextColor(30);y=32;
+  const need=hh=>{if(y+hh>285){d.addPage();y=18;}};
+  const grp=t=>{need(12);d.setFillColor(230,238,246);d.rect(12,y-4,186,7,'F');d.setFont(undefined,'bold');d.setFontSize(11);d.setTextColor(31,59,99);d.text(t,14,y+1);y+=10;d.setTextColor(30);};
+  const row=(k,v)=>{v=String(v||"\u2014");d.setFontSize(10);d.setFont(undefined,'bold');const lines=d.splitTextToSize(v,124);const hh=Math.max(6,lines.length*5)+2;need(hh);d.text(k+":",14,y);d.setFont(undefined,'normal');d.text(lines,66,y);y+=hh;};
+  grp("Visit info");row("Visit date",o.date);row("Salesperson",o.salesperson);row("Visit type",o.type);row("Visit channel",o.channel);
+  grp("Customer");row("Company",o.company);row("Contact person",o.contact);row("Position",o.position);row("Department",o.dept);row("Phone",o.phone);row("Email",o.email);row("Site / location",o.site);
+  grp("Opportunity / project");row("Product of interest",o.product);row("Project / reference",o.project);row("Estimated value (THB)",o.value);row("Budget status",o.budget);row("Timeframe",o.timeframe);row("Competitors",o.competitors);
+  grp("Meeting detail");row("Purpose",o.purpose);row("Discussion notes",o.notes);if(o.type==='New URS')row("URS / requirements",o.urs);
+  grp("Outcome & next steps");row("Outcome",o.outcome);row("Next to-do",o.next);row("Responsible",o.owner);row("Follow-up date",o.follow);
+  need(24);y+=10;d.setDrawColor(180);d.line(14,y,90,y);d.line(120,y,196,y);d.setFontSize(9);d.text("Salesperson signature",14,y+5);d.text("Customer signature",120,y+5);
+  const cust=(o.company||"report").replace(/[^a-z0-9]/gi,'_');
+  d.save("MEDPAC_visit_"+cust+"_"+(o.date||today())+".pdf");
+}
+function reprint(id){const o=loadReports().find(x=>x.id===id);if(o)makePDFfromObj(o);}
+function renderReports(){
+  const reps=loadReports().slice().sort((a,b)=>b.id-a.id);
+  const el=document.getElementById('reportsList');
+  if(el) el.innerHTML = reps.length? reps.map(o=>
+    "<div class='item row'><span>"+esc(o.date)+" \u00b7 "+esc(o.company)+"<br><span style='color:var(--muted);font-size:12px'>"+esc(o.type)+" \u00b7 "+esc(o.outcome)+"</span></span><button class='link' onclick='reprint("+o.id+")'>PDF</button></div>"
+  ).join("") : "<div class='empty'>No reports yet</div>";
+  const mo=today().slice(0,7);
+  const rc=document.getElementById('repCount'); if(rc) rc.textContent=reps.filter(o=>String(o.date||'').startsWith(mo)).length+" this month";
+  const rr=document.getElementById('repRecent');
+  if(rr) rr.innerHTML = reps.length? reps.slice(0,5).map(o=>"<div class='item'>"+esc(o.date)+" \u00b7 "+esc(o.company)+" \u00b7 "+esc(o.type)+"</div>").join("") : "<div class='empty'>No reports yet</div>";
+}
+function exportReportsCSV(){
+  const reps=loadReports(); if(!reps.length){alert("No reports to export.");return;}
+  const head=["Date","Salesperson","Type","Channel","Company","Contact","Position","Department","Phone","Email","Site","Product","Project","Value(THB)","Budget","Timeframe","Competitors","Purpose","Notes","URS","Outcome","NextToDo","Responsible","FollowUp"];
+  const keys=["date","salesperson","type","channel","company","contact","position","dept","phone","email","site","product","project","value","budget","timeframe","competitors","purpose","notes","urs","outcome","next","owner","follow"];
+  const body=reps.map(o=>keys.map(k=>'"'+String(o[k]||"").replace(/"/g,'""')+'"').join(","));
+  download("MEDPAC_visit_reports.csv",[head.join(","),...body].join("\n"));
 }
 
 /* ---- init ---- */
 document.getElementById('mMonth').value=today().slice(0,7);
 openReport();
-refreshName();locate();render();
+refreshName();locate();render();renderReports();
 </script>
 </body>
 </html>
