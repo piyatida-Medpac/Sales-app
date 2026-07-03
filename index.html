@@ -159,13 +159,13 @@ nav button.active{color:var(--blue)}
         <select id="rChannel"><option>On-site</option><option>Online</option><option>Phone</option></select></div>
 
       <div class="grp">Customer</div>
-      <div class="field"><label>Company name</label><input id="rCompany" placeholder="Company / hospital name"></div>
+      <div class="field"><label>Company name</label><input id="rCompany" placeholder="Company name (pharma)"></div>
       <div class="field"><label>Contact person</label><input id="rContact" placeholder="Name"></div>
       <div class="field"><label>Position / role</label><input id="rPosition" placeholder="e.g. Purchasing, QA, Dr."></div>
       <div class="field"><label>Department</label><input id="rDept" placeholder="Department"></div>
       <div class="field"><label>Phone</label><input id="rPhone" placeholder="Phone"></div>
       <div class="field"><label>Email</label><input id="rEmail" type="email" placeholder="Email"></div>
-      <div class="field"><label>Site / location</label><input id="rSite" placeholder="Branch or address"></div>
+      <div class="field"><label>Area / zone</label><input id="rSite" placeholder="e.g. Bangkok, Central, North, E-East"></div>
 
       <div class="grp">Opportunity / project</div>
       <div class="field"><label>Product / machine of interest</label><input id="rProduct" placeholder="Model / product line"></div>
@@ -175,11 +175,13 @@ nav button.active{color:var(--blue)}
         <select id="rBudget"><option>Unknown</option><option>Budgeted</option><option>Not yet budgeted</option><option>Pending approval</option></select></div>
       <div class="field"><label>Expected purchase timeframe</label>
         <select id="rTime"><option>Unknown</option><option>This quarter</option><option>3–6 months</option><option>6–12 months</option><option>Over 12 months</option></select></div>
-      <div class="field"><label>Competitors involved</label><input id="rComp" placeholder="If any"></div>
+      <div class="field"><label>Competitors involved</label>
+        <div id="compRows"></div>
+        <button type="button" class="link" style="margin-top:8px" onclick="addCompRow()">+ Add row</button></div>
 
       <div class="grp">Meeting detail</div>
       <div class="field"><label>Purpose of visit</label><input id="rPurpose" placeholder="Purpose"></div>
-      <div class="field"><label>Discussion notes</label><textarea id="rNotes" rows="6" placeholder="Meeting details — short or long"></textarea></div>
+      <div class="field"><label>Discussion notes</label><textarea id="rNotes" rows="6" placeholder="Meeting details"></textarea></div>
       <div class="field" id="ursField" style="display:none"><label>Customer requirements / URS notes</label><textarea id="rURS" rows="4" placeholder="Key requirements / specifications"></textarea></div>
 
       <div class="grp">Outcome &amp; next steps</div>
@@ -403,12 +405,14 @@ function viewHistory(){
 
 /* ---- Visit report ---- */
 function ursToggle(){const t=document.getElementById('rType');const f=document.getElementById('ursField');if(t&&f)f.style.display=(t.value==='New URS')?'':'none';}
-function openReport(){const e=document.getElementById('rDate');if(e)e.value=today();ursToggle();}
+function openReport(){const e=document.getElementById('rDate');if(e)e.value=today();ursToggle();const c=document.getElementById('compRows');if(c){c.innerHTML='';addCompRow();}}
+function addCompRow(){const c=document.getElementById('compRows');if(!c)return;const d=document.createElement('div');d.className='comprow';d.style.cssText='display:flex;gap:8px;margin-top:6px';d.innerHTML="<input class='compA' style='flex:1;min-width:0' placeholder='Company 1'><input class='compB' style='flex:1;min-width:0' placeholder='Company 2'>";c.appendChild(d);}
+function collectComp(){const out=[];document.querySelectorAll('#compRows .comprow').forEach(r=>{const a=r.querySelector('.compA').value.trim();const b=r.querySelector('.compB').value.trim();if(a||b)out.push([a,b]);});return out;}
 function makePDF(){
   const g=id=>{const e=document.getElementById(id);return e?String(e.value).trim():"";};
   const o={id:Date.now(),date:g('rDate')||today(),salesperson:getName()||"\u2014",type:g('rType'),channel:g('rChannel'),
     company:g('rCompany'),contact:g('rContact'),position:g('rPosition'),dept:g('rDept'),phone:g('rPhone'),email:g('rEmail'),site:g('rSite'),
-    product:g('rProduct'),project:g('rProject'),value:g('rValue'),budget:g('rBudget'),timeframe:g('rTime'),competitors:g('rComp'),
+    product:g('rProduct'),project:g('rProject'),value:g('rValue'),budget:g('rBudget'),timeframe:g('rTime'),competitors:collectComp(),
     purpose:g('rPurpose'),notes:g('rNotes'),urs:g('rURS'),outcome:g('rOutcome'),next:g('rNext'),owner:g('rOwner'),follow:g('rFollow')};
   if(!o.company){alert("Please enter the company name.");return;}
   const reps=loadReports();reps.push(o);saveReports(reps);renderReports();
@@ -421,8 +425,8 @@ function makePDFfromObj(o){
   const grp=t=>{need(12);d.setFillColor(230,238,246);d.rect(12,y-4,186,7,'F');d.setFont(undefined,'bold');d.setFontSize(11);d.setTextColor(31,59,99);d.text(t,14,y+1);y+=10;d.setTextColor(30);};
   const row=(k,v)=>{v=String(v||"\u2014");d.setFontSize(10);d.setFont(undefined,'bold');const lines=d.splitTextToSize(v,124);const hh=Math.max(6,lines.length*5)+2;need(hh);d.text(k+":",14,y);d.setFont(undefined,'normal');d.text(lines,66,y);y+=hh;};
   grp("Visit info");row("Visit date",o.date);row("Salesperson",o.salesperson);row("Visit type",o.type);row("Visit channel",o.channel);
-  grp("Customer");row("Company",o.company);row("Contact person",o.contact);row("Position",o.position);row("Department",o.dept);row("Phone",o.phone);row("Email",o.email);row("Site / location",o.site);
-  grp("Opportunity / project");row("Product of interest",o.product);row("Project / reference",o.project);row("Estimated value (THB)",o.value);row("Budget status",o.budget);row("Timeframe",o.timeframe);row("Competitors",o.competitors);
+  grp("Customer");row("Company",o.company);row("Contact person",o.contact);row("Position",o.position);row("Department",o.dept);row("Phone",o.phone);row("Email",o.email);row("Area / zone",o.site);
+  grp("Opportunity / project");row("Product of interest",o.product);row("Project / reference",o.project);row("Estimated value (THB)",o.value);row("Budget status",o.budget);row("Timeframe",o.timeframe);const _comp=Array.isArray(o.competitors)?o.competitors.map(r=>r.filter(Boolean).join("   /   ")).filter(Boolean).join("\n"):(o.competitors||"");row("Competitors",_comp);
   grp("Meeting detail");row("Purpose",o.purpose);row("Discussion notes",o.notes);if(o.type==='New URS')row("URS / requirements",o.urs);
   grp("Outcome & next steps");row("Outcome",o.outcome);row("Next to-do",o.next);row("Responsible",o.owner);row("Follow-up date",o.follow);
   need(24);y+=10;d.setDrawColor(180);d.line(14,y,90,y);d.line(120,y,196,y);d.setFontSize(9);d.text("Salesperson signature",14,y+5);d.text("Customer signature",120,y+5);
@@ -443,9 +447,9 @@ function renderReports(){
 }
 function exportReportsCSV(){
   const reps=loadReports(); if(!reps.length){alert("No reports to export.");return;}
-  const head=["Date","Salesperson","Type","Channel","Company","Contact","Position","Department","Phone","Email","Site","Product","Project","Value(THB)","Budget","Timeframe","Competitors","Purpose","Notes","URS","Outcome","NextToDo","Responsible","FollowUp"];
+  const head=["Date","Salesperson","Type","Channel","Company","Contact","Position","Department","Phone","Email","Area/Zone","Product","Project","Value(THB)","Budget","Timeframe","Competitors","Purpose","Notes","URS","Outcome","NextToDo","Responsible","FollowUp"];
   const keys=["date","salesperson","type","channel","company","contact","position","dept","phone","email","site","product","project","value","budget","timeframe","competitors","purpose","notes","urs","outcome","next","owner","follow"];
-  const body=reps.map(o=>keys.map(k=>'"'+String(o[k]||"").replace(/"/g,'""')+'"').join(","));
+  const body=reps.map(o=>keys.map(k=>{let v=o[k];if(k==="competitors"&&Array.isArray(v))v=v.map(r=>r.filter(Boolean).join(" / ")).filter(Boolean).join("; ");return '"'+String(v||"").replace(/"/g,'""')+'"';}).join(","));
   download("MEDPAC_visit_reports.csv",[head.join(","),...body].join("\n"));
 }
 
