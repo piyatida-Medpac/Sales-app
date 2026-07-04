@@ -239,6 +239,8 @@ function save(r){localStorage.setItem(DB_KEY,JSON.stringify(r))}
 const REP_KEY="medpac_sales_reports";
 function loadReports(){return JSON.parse(localStorage.getItem(REP_KEY)||"[]")}
 function saveReports(r){localStorage.setItem(REP_KEY,JSON.stringify(r))}
+const SHEET_URL="https://script.google.com/macros/s/AKfycbyrJq4_TaXhIn179HLyZjViwN2ivee9GX8V4Rktp6wgSBE12Shi8ofLXu9sl0ScsK1O2A/exec";
+function submitToCloud(o){try{const payload=Object.assign({},o,{area:o.site,competitors:Array.isArray(o.competitors)?o.competitors.map(function(r){return r.filter(Boolean).join(" / ")}).filter(Boolean).join("; "):(o.competitors||"")});fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});}catch(e){}}
 function today(){return new Date().toISOString().slice(0,10)}
 function fmt(t){const d=new Date(t);return d.toLocaleString()}
 function hms(ms){const s=Math.floor(ms/1000);const h=String(Math.floor(s/3600)).padStart(2,'0');
@@ -416,6 +418,7 @@ function makePDF(){
     purpose:g('rPurpose'),notes:g('rNotes'),urs:g('rURS'),outcome:g('rOutcome'),next:g('rNext'),owner:g('rOwner'),follow:g('rFollow')};
   if(!o.company){alert("Please enter the company name.");return;}
   const reps=loadReports();reps.push(o);saveReports(reps);renderReports();
+  submitToCloud(o);
   makePDFfromObj(o);
 }
 function makePDFfromObj(o){
