@@ -209,12 +209,22 @@ nav button.active{color:var(--blue)}
       <div id="history" style="margin-top:10px"></div>
     </div>
   </section>
+
+  <section class="view" id="v-team">
+    <div class="card">
+      <div class="row"><div class="sec-title" style="margin:0">👥 Team Check-ins</div><button class="link" onclick="loadTeam(true)">↻ Refresh</button></div>
+      <div class="field"><label>Date</label><input type="date" id="tDate" onchange="renderTeam()"></div>
+      <div id="teamList"><div class="empty">Loading…</div></div>
+      <div class="hint">All staff check-ins, synced through the central Google Sheet. Staff phones need internet at check-in time for entries to appear here. Photos stay on each phone.</div>
+    </div>
+  </section>
 </main>
 
 <nav>
   <button class="active" data-v="home" onclick="go('home')"><span class="ic">🏠</span>Home</button>
   <button data-v="check" onclick="go('check')"><span class="ic">📍</span>Check In/Out</button>
   <button data-v="dash" onclick="go('dash')"><span class="ic">📊</span>Dashboard</button>
+  <button data-v="team" onclick="go('team')"><span class="ic">👥</span>Team</button>
   <button data-v="reports" onclick="go('reports')"><span class="ic">📝</span>Reports</button>
 </nav>
 
@@ -241,6 +251,40 @@ function loadReports(){return JSON.parse(localStorage.getItem(REP_KEY)||"[]")}
 function saveReports(r){localStorage.setItem(REP_KEY,JSON.stringify(r))}
 const SHEET_URL="https://script.google.com/macros/s/AKfycbyrJq4_TaXhIn179HLyZjViwN2ivee9GX8V4Rktp6wgSBE12Shi8ofLXu9sl0ScsK1O2A/exec";
 function submitToCloud(o){try{const payload=Object.assign({},o,{area:o.site,competitors:Array.isArray(o.competitors)?o.competitors.map(function(r){return r.filter(Boolean).join(" / ")}).filter(Boolean).join("; "):(o.competitors||"")});fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});}catch(e){}}
+function submitCheckinToCloud(o){try{fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({kind:"checkin"},o))});}catch(e){}}
+
+/* ---- team view (all staff check-ins from the central Sheet) ---- */
+let teamRows=null;
+function loadTeam(force){
+  if(teamRows&&!force){renderTeam();return}
+  const el=document.getElementById('teamList');el.innerHTML='<div class="empty">Loading…</div>';
+  fetch(SHEET_URL+"?view=checkins&days=31").then(r=>r.json()).then(rows=>{teamRows=rows;renderTeam();})
+    .catch(()=>{el.innerHTML='<div class="empty">Could not load team data.<br>Check your internet connection, or the Apps Script may need to be updated (see admin guide).</div>';});
+}
+function renderTeam(){
+  if(!teamRows)return;
+  const d=document.getElementById('tDate').value||today();
+  const map={};
+  teamRows.filter(r=>r.date===d).forEach(r=>{
+    const k=r.id+"|"+r.name;
+    map[k]=map[k]||{name:r.name,in:null,out:null,locIn:"",locOut:""};
+    if(r.event==="out"){map[k].out=+r.time;map[k].locOut=r.loc||"";}
+    else{map[k].in=+r.time;map[k].locIn=r.loc||"";}
+  });
+  const tf=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const list=Object.values(map).sort((a,b)=>(a.in||a.out||0)-(b.in||b.out||0));
+  const el=document.getElementById('teamList');
+  if(!list.length){el.innerHTML='<div class="empty">No check-ins on '+d+'</div>';return}
+  el.innerHTML=list.map(x=>{
+    const status=x.in&&!x.out?'<span class="pill" style="background:#e6f4ea;color:#1e7d3e">On site</span>':(x.in&&x.out?'<span class="pill">'+hms(x.out-x.in)+'</span>':'');
+    const loc=x.locIn&&/\d/.test(x.locIn)?' · <a href="https://maps.google.com/?q='+encodeURIComponent(x.locIn)+'" target="_blank" rel="noopener">map</a>':'';
+    return '<div style="padding:10px 2px;border-bottom:1px solid var(--line)">'
+      +'<div class="row" style="align-items:center"><strong>'+String(x.name||"—").replace(/</g,"&lt;")+'</strong>'+status+'</div>'
+      +'<div class="hint" style="margin-top:2px">In: '+(x.in?tf(x.in):"—")+(x.out?' · Out: '+tf(x.out):'')+loc+'</div></div>';
+  }).join("");
+}
+document.getElementById('tDate').value=new Date().toISOString().slice(0,10);
+
 function today(){return new Date().toISOString().slice(0,10)}
 function fmt(t){const d=new Date(t);return d.toLocaleString()}
 function hms(ms){const s=Math.floor(ms/1000);const h=String(Math.floor(s/3600)).padStart(2,'0');
@@ -267,6 +311,7 @@ function go(v){
   document.getElementById('v-'+v).classList.add('active');
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
   window.scrollTo(0,0); render();
+  if(v==='team')loadTeam(false);
 }
 document.getElementById('qCheckIn').onclick=()=>{go('check');openCam('in')};
 document.getElementById('qCheckOut').onclick=()=>{go('check');if(!openCheck())openCam('out')};
@@ -318,12 +363,16 @@ function snap(){
 /* ---- check in / out ---- */
 function doCheckIn(img){
   const recs=load();
-  recs.push({id:Date.now(),name:getName(),date:today(),in:Date.now(),out:null,locIn:pendingLoc,locOut:"",photoIn:img,photoOut:""});
-  save(recs);render();
+  const rec={id:Date.now(),name:getName(),date:today(),in:Date.now(),out:null,locIn:pendingLoc,locOut:"",photoIn:img,photoOut:""};
+  recs.push(rec);
+  save(recs);
+  submitCheckinToCloud({id:rec.id,name:rec.name,date:rec.date,event:"in",time:rec.in,loc:rec.locIn});
+  render();
 }
 function doCheckOut(img){
   const recs=load();const r=recs.slice().reverse().find(x=>x.name===getName()&&!x.out);
-  if(r){r.out=Date.now();r.locOut=pendingLoc;r.photoOut=img;save(recs);}
+  if(r){r.out=Date.now();r.locOut=pendingLoc;r.photoOut=img;save(recs);
+    submitCheckinToCloud({id:r.id,name:r.name,date:r.date,event:"out",time:r.out,loc:r.locOut});}
   render();
 }
 
