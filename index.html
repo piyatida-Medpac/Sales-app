@@ -212,10 +212,10 @@ nav button.active{color:var(--blue)}
 
   <section class="view" id="v-team">
     <div class="card">
-      <div class="row"><div class="sec-title" style="margin:0">👥 Team Check-ins</div><button class="link" onclick="loadTeam(true)">↻ Refresh</button></div>
-      <div class="field"><label>Date</label><input type="date" id="tDate" onchange="renderTeam()"></div>
+      <div class="row"><div class="sec-title" style="margin:0">👥 Team Activity</div><button class="link" onclick="loadTeam(true)">↻ Refresh</button></div>
+      <div class="row" style="gap:8px;align-items:flex-end"><div class="field" id="tDateField" style="flex:1;min-width:0"><label>Date</label><input type="date" id="tDate" onchange="setTeamDay()"></div><button class="btn ghost" id="tAllBtn" style="flex:0 0 auto;width:auto;padding:12px 14px;margin-top:0" onclick="toggleTeamAll()">📜 All days</button></div>
       <div id="teamList"><div class="empty">Loading…</div></div>
-      <div class="hint">All staff check-ins, synced through the central Google Sheet. Staff phones need internet at check-in time for entries to appear here. Photos stay on each phone.</div>
+      <div class="hint">All staff check-ins and visit reports, synced through the central Google Sheet (up to the last 31 days). Staff phones need internet when checking in or saving a report for entries to appear here. Photos stay on each phone.</div>
     </div>
   </section>
 </main>
@@ -249,39 +249,93 @@ function save(r){localStorage.setItem(DB_KEY,JSON.stringify(r))}
 const REP_KEY="medpac_sales_reports";
 function loadReports(){return JSON.parse(localStorage.getItem(REP_KEY)||"[]")}
 function saveReports(r){localStorage.setItem(REP_KEY,JSON.stringify(r))}
-const SHEET_URL="https://script.google.com/macros/s/AKfycbyrJq4_TaXhIn179HLyZjViwN2ivee9GX8V4Rktp6wgSBE12Shi8ofLXu9sl0ScsK1O2A/exec";
+const SHEET_URL="https://script.google.com/macros/s/AKfycbxWp5WGle29Wr8_lgGEdbn_7fYuZ9hB-pxjKyEu2MhBLat8QhtTw-JdkRmYqUrqZh-ZFQ/exec";
 function submitToCloud(o){try{const payload=Object.assign({},o,{area:o.site,competitors:Array.isArray(o.competitors)?o.competitors.map(function(r){return r.filter(Boolean).join(" / ")}).filter(Boolean).join("; "):(o.competitors||"")});fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});}catch(e){}}
 function submitCheckinToCloud(o){try{fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({kind:"checkin"},o))});}catch(e){}}
 
-/* ---- team view (all staff check-ins from the central Sheet) ---- */
-let teamRows=null;
+/* ---- team view (all staff check-ins + visit reports from the central Sheet) ---- */
+let teamRows=null, teamReports=null, teamAll=false;
 function loadTeam(force){
   if(teamRows&&!force){renderTeam();return}
   const el=document.getElementById('teamList');el.innerHTML='<div class="empty">Loading…</div>';
-  fetch(SHEET_URL+"?view=checkins&days=31").then(r=>r.json()).then(rows=>{teamRows=rows;renderTeam();})
+  const pC=fetch(SHEET_URL+"?view=checkins&days=31").then(r=>r.json());
+  const pR=fetch(SHEET_URL+"?view=reports&days=31").then(r=>r.json()).catch(()=>null);
+  Promise.all([pC,pR]).then(([rows,reps])=>{teamRows=rows;teamReports=Array.isArray(reps)?reps:null;renderTeam();})
     .catch(()=>{el.innerHTML='<div class="empty">Could not load team data.<br>Check your internet connection, or the Apps Script may need to be updated (see admin guide).</div>';});
 }
-function renderTeam(){
-  if(!teamRows)return;
-  const d=document.getElementById('tDate').value||today();
+function toggleTeamAll(){
+  teamAll=!teamAll;
+  const b=document.getElementById('tAllBtn');if(b)b.textContent=teamAll?'📅 One day':'📜 All days';
+  const f=document.getElementById('tDateField');if(f)f.style.opacity=teamAll?'.45':'1';
+  renderTeam();
+}
+function setTeamDay(){
+  teamAll=false;
+  const b=document.getElementById('tAllBtn');if(b)b.textContent='📜 All days';
+  const f=document.getElementById('tDateField');if(f)f.style.opacity='1';
+  renderTeam();
+}
+function teamDayHTML(d){
+  const eh=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
   const map={};
   teamRows.filter(r=>r.date===d).forEach(r=>{
-    const k=r.id+"|"+r.name;
-    map[k]=map[k]||{name:r.name,in:null,out:null,locIn:"",locOut:""};
+    const k=String(r.name||"").trim().toLowerCase()||String(r.id);
+    map[k]=map[k]||{name:r.name,in:null,out:null,locIn:"",locOut:"",reps:[]};
     if(r.event==="out"){map[k].out=+r.time;map[k].locOut=r.loc||"";}
     else{map[k].in=+r.time;map[k].locIn=r.loc||"";}
   });
+  (teamReports||[]).filter(r=>r.date===d).forEach(r=>{
+    const k=String(r.salesperson||"").trim().toLowerCase()||"—";
+    map[k]=map[k]||{name:r.salesperson,in:null,out:null,locIn:"",locOut:"",reps:[]};
+    map[k].reps=map[k].reps||[];
+    map[k].reps.push(r);
+  });
   const tf=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   const list=Object.values(map).sort((a,b)=>(a.in||a.out||0)-(b.in||b.out||0));
-  const el=document.getElementById('teamList');
-  if(!list.length){el.innerHTML='<div class="empty">No check-ins on '+d+'</div>';return}
-  el.innerHTML=list.map(x=>{
+  if(!list.length)return "";
+  return list.map(x=>{
     const status=x.in&&!x.out?'<span class="pill" style="background:#e6f4ea;color:#1e7d3e">On site</span>':(x.in&&x.out?'<span class="pill">'+hms(x.out-x.in)+'</span>':'');
     const loc=x.locIn&&/\d/.test(x.locIn)?' · <a href="https://maps.google.com/?q='+encodeURIComponent(x.locIn)+'" target="_blank" rel="noopener">map</a>':'';
+    const reps=(x.reps||[]).map(r=>{
+      const l1='🏢 <strong>'+eh(r.company||"—")+'</strong>'+(r.type?' <span class="pill" style="background:#e8eef7;color:#1f3b63">'+eh(r.type)+'</span>':'');
+      const bits=[];
+      if(r.purpose)bits.push("Purpose: "+eh(r.purpose));
+      if(r.outcome)bits.push("Outcome: "+eh(r.outcome));
+      if(r.next)bits.push("Next: "+eh(r.next)+(r.follow?" ("+eh(r.follow)+")":""));
+      return '<div style="margin-top:6px;padding:8px 10px;background:#f6f8fb;border-radius:10px">'
+        +'<div style="font-size:13px">'+l1+'</div>'
+        +(bits.length?'<div class="hint" style="margin-top:3px">'+bits.join('<br>')+'</div>':'')+'</div>';
+    }).join("");
     return '<div style="padding:10px 2px;border-bottom:1px solid var(--line)">'
-      +'<div class="row" style="align-items:center"><strong>'+String(x.name||"—").replace(/</g,"&lt;")+'</strong>'+status+'</div>'
-      +'<div class="hint" style="margin-top:2px">In: '+(x.in?tf(x.in):"—")+(x.out?' · Out: '+tf(x.out):'')+loc+'</div></div>';
+      +'<div class="row" style="align-items:center"><strong>'+eh(x.name||"—")+'</strong>'+status+'</div>'
+      +'<div class="hint" style="margin-top:2px">In: '+(x.in?tf(x.in):"—")+(x.out?' · Out: '+tf(x.out):'')+loc
+      +((x.reps&&x.reps.length)?' · 📝 '+x.reps.length+' visit'+(x.reps.length>1?'s':''):'')+'</div>'
+      +reps+'</div>';
   }).join("");
+}
+function renderTeam(){
+  if(!teamRows)return;
+  const el=document.getElementById('teamList');
+  const eh=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  if(teamAll){
+    const ds=new Set();
+    teamRows.forEach(r=>{if(r.date)ds.add(r.date)});
+    (teamReports||[]).forEach(r=>{if(r.date)ds.add(r.date)});
+    const dates=Array.from(ds).sort().reverse();
+    let out="";
+    dates.forEach(d=>{
+      const day=teamDayHTML(d);
+      if(!day)return;
+      let label=d;
+      try{label=new Date(d+"T12:00:00").toLocaleDateString([],{weekday:"short",day:"numeric",month:"short",year:"numeric"});}catch(e){}
+      out+='<div style="margin:16px 0 2px;padding:6px 10px;background:#e8eef7;border-radius:8px;font-weight:700;color:#1f3b63">📆 '+eh(label)+'</div>'+day;
+    });
+    el.innerHTML=out||'<div class="empty">No activity in the last 31 days</div>';
+  }else{
+    const d=document.getElementById('tDate').value||today();
+    const day=teamDayHTML(d);
+    el.innerHTML=day||'<div class="empty">No activity on '+eh(d)+'</div>';
+  }
 }
 document.getElementById('tDate').value=new Date().toISOString().slice(0,10);
 
